@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Детали места</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        header h1 {
+            font-size: 28px;
+            margin: 0;
+        }
+        .place-container {
+            margin: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .place-container h2 {
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+        .place-container img {
+            width: 100%;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .place-details p {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        .place-details .rating span {
+            font-size: 20px;
+            cursor: pointer;
+        }
+        .place-details .rating span:hover {
+            color: #FFD700;
+        }
+        .reviews {
+            margin-top: 30px;
+        }
+        .review {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .review .reviewer-name {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .review .review-text {
+            margin-top: 5px;
+            font-size: 14px;
+        }
+        .leave-review {
+            margin-top: 30px;
+        }
+        .leave-review textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            resize: vertical;
+        }
+        .leave-review input, .leave-review textarea {
+            margin-bottom: 10px;
+        }
+        .leave-review button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .leave-review button:hover {
+            background-color: #45a049;
+        }
+        .infrastructure, .climate, .ecology, .safety, .parking {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f1f1f1;
+            border-radius: 8px;
+        }
+        .infrastructure h3, .climate h3, .ecology h3, .safety h3, .parking h3 {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Детали места</h1>
+</header>
+
+<main>
+    <div class="place-container" id="place-details">
+        <!-- Здесь будет отображаться информация о месте -->
+    </div>
+</main>
+
+<footer>
+    <p>&copy; 2024 Карта с рейтингом мест для строительства. Все права защищены.</p>
+</footer>
+
+<!-- Подключение Leaflet и скрипта для отображения карты -->
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script>
+    // Массив с данными о местах
+    var locations = [
+        { 
+            id: 1, 
+            name: 'Жилой район А', 
+            lat: 55.7558, 
+            lon: 37.6173, 
+            type: 'residential', 
+            price: 'medium', 
+            rating: 3, 
+            reviews: [
+                { name: 'Иван', rating: 4, text: 'Очень тихий и зеленый район.' },
+                { name: 'Мария', rating: 3, text: 'Хороший, но слишком много машин.' }
+            ], 
+            image: 'https://via.placeholder.com/1200x600?text=Жилой+район+А', 
+            infrastructure: 'Магазины, школы, детские сады, транспортные узлы.',
+            climate: 'Умеренно континентальный климат с холодной зимой и тёплым летом.',
+            ecology: 'Чистота воздуха: 85%, уровень шума: 40 дБ.',
+            safety: 'Низкий уровень преступности, много патрулей.',
+            parking: 'Большая парковка рядом с домами.'
+        },
+        { 
+            id: 2, 
+            name: 'Коммерческий центр Б', 
+            lat: 55.7428, 
+            lon: 37.6283, 
+            type: 'commercial', 
+            price: 'high', 
+            rating: 5, 
+            reviews: [
+                { name: 'Сергей', rating: 5, text: 'Отличное местоположение, всегда много клиентов.' }
+            ], 
+            image: 'https://via.placeholder.com/1200x600?text=Коммерческий+центр+Б',
+            infrastructure: 'Офисы, магазины, рестораны, парковки.',
+            climate: 'Морской климат с мягкой зимой и жарким летом.',
+            ecology: 'Чистота воздуха: 90%, уровень шума: 50 дБ.',
+            safety: 'Высокий уровень безопасности, видеонаблюдение.',
+            parking: 'Парковка с ограниченным доступом.'
+        }
+    ];
+
+    // Извлекаем ID места из URL
+    var urlParams = new URLSearchParams(window.location.search);
+    var placeId = parseInt(urlParams.get('id'));
+
+    if (isNaN(placeId)) {
+        alert('Неверный ID места');
+    } else {
+        // Ищем место с заданным id
+        var place = locations.find(function(p) { return p.id === placeId; });
+
+        // Функция для отображения информации о месте
+        function displayPlaceDetails() {
+            if (place) {
+                var placeContainer = document.getElementById('place-details');
+                placeContainer.innerHTML = `
+                    <h2>${place.name}</h2>
+                    <div style="width: 100%; height: 400px; background-color: #ccc; text-align: center; line-height: 400px; color: #fff;">Изображение места</div>
+                    <div class="place-details">
+                        <p><strong>Тип:</strong> ${place.type}</p>
+                        <p><strong>Цена:</strong> ${place.price}</p>
+                        <p><strong>Рейтинг:</strong> ${'★'.repeat(place.rating)}${'★'.repeat(5 - place.rating)}</p>
+                    </div>
+                    <div class="infrastructure">
+                        <h3>Инфраструктура:</h3>
+                        <p>${place.infrastructure}</p>
+                    </div>
+                    <div class="climate">
+                        <h3>Климатические условия:</h3>
+                        <p>${place.climate}</p>
+                    </div>
+                    <div class="ecology">
+                        <h3>Экологические условия:</h3>
+                        <p>${place.ecology}</p>
+                    </div>
+                    <div class="safety">
+                        <h3>Безопасность:</h3>
+                        <p>${place.safety}</p>
+                    </div>
+                    <div class="parking">
+                        <h3>Парковка:</h3>
+                        <p>${place.parking}</p>
+                    </div>
+                    <div class="reviews">
+                        <h3>Отзывы:</h3>
+                        ${place.reviews.map(function(review) {
+                            return `
+                                <div class="review">
+                                    <div class="reviewer-name">${review.name} (Оценка: ${'★'.repeat(review.rating)}${'★'.repeat(5 - review.rating)})</div>
+                                    <div class="review-text">${review.text}</div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                    <div class="leave-review">
+                        <h3>Оставьте свой отзыв:</h3>
+                        <input type="text" id="review-name" placeholder="Ваше имя" /><br>
+                        <textarea id="review-text" rows="4" cols="50" placeholder="Ваш отзыв"></textarea><br>
+                        <label for="review-rating">Оценка:</label>
+                        <select id="review-rating">
+                            <option value="1">1 ★</option>
+                            <option value="2">2 ★</option>
+                            <option value="3">3 ★</option>
+                            <option value="4">4 ★</option>
+                            <option value="5">5 ★</option>
+                        </select><br>
+                        <button onclick="submitReview()">Отправить отзыв</button>
+                    </div>
+                `;
+            } else {
+                document.getElementById('place-details').innerHTML = '<p>Место не найдено.</p>';
+            }
+        }
+
+        // Функция для отправки отзыва
+        function submitReview() {
+            var reviewName = document.getElementById('review-name').value;
+            var reviewText = document.getElementById('review-text').value;
+            var reviewRating = parseInt(document.getElementById('review-rating').value);
+
+            if (reviewName && reviewText && reviewRating) {
+                place.reviews.push({ name: reviewName, rating: reviewRating, text: reviewText });
+                displayPlaceDetails(); // Перерисовываем страницу с обновлёнными отзывами
+            }
+        }
+
+        // Отображаем детали места
+        displayPlaceDetails();
+    }
+</script>
+
+</body>
+</html>

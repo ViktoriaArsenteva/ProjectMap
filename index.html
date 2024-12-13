@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Карта с рейтингом мест для строительства</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #eaeaea;
+        }
+        header {
+            background-color: #6b8e23;
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        header .logo-container h1 {
+            font-size: 28px;
+            margin: 0;
+            font-weight: 600;
+        }
+        nav a {
+            color: white;
+            margin-left: 20px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 16px;
+        }
+        nav a:hover {
+            text-decoration: underline;
+        }
+        .auth-buttons {
+            display: flex;
+            gap: 15px;
+        }
+        .auth-buttons a {
+            padding: 10px 20px;
+            background-color: #444;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        .auth-buttons a:hover {
+            background-color: #666;
+        }
+        .filter-container {
+            margin: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            max-width: 1000px;
+        }
+        .map-container {
+            margin: 20px auto;
+            max-width: 1000px;
+            position: relative;
+            background-color: #ddd;
+            height: 500px;
+            border-radius: 10px;
+            border: 2px solid #6b8e23;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            background-color: #444;
+            color: white;
+        }
+        select, button {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo-container">
+        <h1>Карта с рейтингом мест для строительства</h1>
+    </div>
+    <nav>
+        <a href="#">Главная</a>
+        <a href="#">О нас</a>
+        <a href="#">Контакты</a>
+    </nav>
+    <div class="auth-buttons">
+        <a href="auth.html" id="login-btn">Регистрация</a>
+        <a href="auth.html" id="signup-btn">Авторизация</a>
+        <a href="#" id="logout-btn" style="display: none;" onclick="logout()">Выйти</a>
+    </div>
+    <span id="user-info"></span>
+</header>
+
+<main>
+    <div class="filter-container">
+        <div>
+            <label for="location-filter">Тип участка:</label>
+            <select id="location-filter">
+                <option value="all">Все</option>
+                <option value="residential">Жилые</option>
+                <option value="commercial">Коммерческие</option>
+            </select>
+        </div>
+        <div>
+            <label for="price-filter">Цена:</label>
+            <select id="price-filter">
+                <option value="all">Все</option>
+                <option value="low">До 10 млн</option>
+                <option value="medium">От 10 до 50 млн</option>
+                <option value="high">От 50 млн</option>
+            </select>
+        </div>
+        <div>
+            <label for="rating-filter">Рейтинг:</label>
+            <select id="rating-filter">
+                <option value="all">Все</option>
+                <option value="1">1 звезда</option>
+                <option value="2">2 звезды</option>
+                <option value="3">3 звезды</option>
+                <option value="4">4 звезды</option>
+                <option value="5">5 звезд</option>
+            </select>
+        </div>
+        <div>
+            <label for="infrastructure-filter">Инфраструктура:</label>
+            <select id="infrastructure-filter">
+                <option value="all">Все</option>
+                <option value="school">Школы</option>
+                <option value="shopping">Магазины</option>
+                <option value="transport">Транспорт</option>
+            </select>
+        </div>
+        <div>
+            <label for="ecology-filter">Экология:</label>
+            <select id="ecology-filter">
+                <option value="all">Все</option>
+                <option value="good">Хорошая</option>
+                <option value="average">Средняя</option>
+                <option value="poor">Плохая</option>
+            </select>
+        </div>
+        <div>
+            <label for="distance-filter">Удаленность от центра (км):</label>
+            <select id="distance-filter">
+                <option value="all">Все</option>
+                <option value="close">До 5 км</option>
+                <option value="medium">5-20 км</option>
+                <option value="far">Более 20 км</option>
+            </select>
+        </div>
+        <div>
+            <button onclick="applyFilters()">Применить фильтры</button>
+        </div>
+    </div>
+
+    <div class="map-container" id="map"></div>
+</main>
+
+<footer>
+    <p>&copy; 2024 Карта с рейтингом мест для строительства. Все права защищены.</p>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script>
+    var map = L.map('map').setView([55.7558, 37.6173], 10);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    var locations = [
+        { id: 1, name: 'Жилой район А', lat: 55.7558, lon: 37.6173, type: 'residential', price: 'medium', rating: 3, description: 'Современные жилые комплексы в центре города.', infrastructure: ['school', 'shopping'], ecology: 'good', distance: 3, pageUrl: 'place.html?id=1' },
+        { id: 2, name: 'Коммерческий центр Б', lat: 55.7428, lon: 37.6283, type: 'commercial', price: 'high', rating: 5, description: 'Идеальное место для бизнеса с высокой проходимостью.', infrastructure: ['shopping', 'transport'], ecology: 'average', distance: 15, pageUrl: 'place.html?id=2' },
+        { id: 3, name: 'Жилой район В', lat: 55.7578, lon: 37.6033, type: 'residential', price: 'low', rating: 2, description: 'Тихий район с хорошими школами.', infrastructure: ['school'], ecology: 'good', distance: 10, pageUrl: 'place.html?id=3' },
+        { id: 4, name: 'Торговый комплекс Г', lat: 55.7498, lon: 37.6400, type: 'commercial', price: 'medium', rating: 4, description: 'Широкий выбор магазинов и кафе.', infrastructure: ['shopping', 'transport'], ecology: 'poor', distance: 20, pageUrl: 'place.html?id=4' },
+        { id: 5, name: 'Загородный комплекс Д', lat: 55.7488, lon: 37.6150, type: 'residential', price: 'high', rating: 5, description: 'Идеальный район для жизни с экологически чистым воздухом.', infrastructure: ['school', 'shopping'], ecology: 'good', distance: 25, pageUrl: 'place.html?id=5' }
+    ];
+
+    var loggedIn = localStorage.getItem('user') !== null;
+    var user = loggedIn ? JSON.parse(localStorage.getItem('user')) : null;
+
+    function updateAuthButtons() {
+        if (loggedIn) {
+            document.getElementById('login-btn').style.display = 'none';
+            document.getElementById('signup-btn').style.display = 'none';
+            document.getElementById('logout-btn').style.display = 'inline-block';
+            document.getElementById('user-info').textContent = 'Добро пожаловать, ' + user.username + '!';
+        } else {
+            document.getElementById('login-btn').style.display = 'inline-block';
+            document.getElementById('signup-btn').style.display = 'inline-block';
+            document.getElementById('logout-btn').style.display = 'none';
+            document.getElementById('user-info').textContent = '';
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem('user');
+        loggedIn = false;
+        updateAuthButtons();
+    }
+
+    function applyFilters() {
+        var locationFilter = document.getElementById('location-filter').value;
+        var priceFilter = document.getElementById('price-filter').value;
+        var ratingFilter = document.getElementById('rating-filter').value;
+        var infrastructureFilter = document.getElementById('infrastructure-filter').value;
+        var ecologyFilter = document.getElementById('ecology-filter').value;
+        var distanceFilter = document.getElementById('distance-filter').value;
+
+        var filteredLocations = locations.filter(function (location) {
+            return (locationFilter === 'all' || location.type === locationFilter) &&
+                (priceFilter === 'all' || location.price === priceFilter) &&
+                (ratingFilter === 'all' || location.rating.toString() === ratingFilter) &&
+                (infrastructureFilter === 'all' || location.infrastructure.includes(infrastructureFilter)) &&
+                (ecologyFilter === 'all' || location.ecology === ecologyFilter) &&
+                (distanceFilter === 'all' || (distanceFilter === 'close' && location.distance <= 5) || 
+                (distanceFilter === 'medium' && location.distance > 5 && location.distance <= 20) || 
+                (distanceFilter === 'far' && location.distance > 20));
+        });
+
+        displayLocations(filteredLocations);
+    }
+
+    function displayLocations(filteredLocations) {
+        // Clear current markers on the map
+        map.eachLayer(function (layer) {
+            if (layer instanceof L.Marker) {
+                map.removeLayer(layer);
+            }
+        });
+
+        filteredLocations.forEach(function (location) {
+            L.marker([location.lat, location.lon]).addTo(map)
+                .bindPopup(`<b>${location.name}</b><br>${location.description}<br><a href="${location.pageUrl}">Подробнее</a>`);
+        });
+    }
+
+    updateAuthButtons();
+    displayLocations(locations);
+</script>
+
+</body>
+</html>
